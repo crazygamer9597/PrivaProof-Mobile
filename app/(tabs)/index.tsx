@@ -42,39 +42,43 @@ function ScanScreen() {
         .eq('random_id', data)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw new Error(error.message);
+      }
 
-      if (items) {
-        setItemDetails(items);
-        setResult({
-          message: 'Item found',
-          isError: false,
-        });
-
-        // Store the scan in scan_history using name from stored_ids
-        const { error: historyError } = await supabase
-          .from('scan_history')
-          .insert({
-            item_id: items.random_id,
-            item_name: items.name,
-          });
-
-        if (historyError) {
-          console.error('Error saving to scan history:', historyError);
-          // Don't show error to user as this is a background operation
-        }
-      } else {
+      if (!items) {
         setItemDetails(null);
         setResult({
-          message: 'Item not found',
+          message: 'No item found with this ID',
           isError: true,
         });
+        return;
+      }
+
+      setItemDetails(items);
+      setResult({
+        message: 'Item found successfully',
+        isError: false,
+      });
+
+      // Store the scan in scan_history using name from stored_ids
+      const { error: historyError } = await supabase
+        .from('scan_history')
+        .insert({
+          item_id: items.random_id,
+          item_name: items.name,
+        });
+
+      if (historyError) {
+        console.error('Error saving to scan history:', historyError);
+        // Don't show error to user as this is a background operation
       }
     } catch (err) {
       console.error('Error fetching item:', err);
       setItemDetails(null);
       setResult({
-        message: 'Failed to fetch item details',
+        message: err instanceof Error ? err.message : 'Failed to fetch item details',
         isError: true,
       });
     }
