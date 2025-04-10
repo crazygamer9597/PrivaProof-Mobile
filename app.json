@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Priva Proof Verifier",
-    "slug": "Priva Proof Verifier",
-    "version": "1.0.0",
+    "slug": "priva-proof-verifier",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -10,14 +10,21 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.togori3110.privaproofverifier",
+      "buildNumber": "3",
       "infoPlist": {
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera"
       }
     },
     "android": {
       "permissions": [
-        "android.permission.CAMERA"
-      ]
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.togori3110.privaproofverifier",
+      "versionCode": 3
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +44,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "1cfe1f47-5fa2-4762-b1e5-aa990e009dc5"
+      }
     }
   }
 }

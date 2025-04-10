@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,11 +6,13 @@ import {
   TouchableOpacity,
   Platform,
   ScrollView,
+  TextInput,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Circle as XCircle } from 'lucide-react-native';
 import { supabase } from '../../lib/supabase';
 import WebScanner from '../../components/WebScanner';
+import AgeVerifier from '../../components/AgeVerifier';
 
 interface StoredItem {
   id: string;
@@ -18,7 +20,8 @@ interface StoredItem {
   name: string;
   description: string;
   created_at: string;
-  [key: string]: any; // For any additional columns
+  age: number;
+  [key: string]: any;
 }
 
 function ScanScreen() {
@@ -30,6 +33,8 @@ function ScanScreen() {
   } | null>(null);
   const [itemDetails, setItemDetails] = useState<StoredItem | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
+  const [cameraReady, setCameraReady] = useState(false);
+  const cameraRef = useRef(null);
 
   const handleBarCodeScanned = async ({ data }: { data: string }) => {
     setScanned(true);
@@ -39,42 +44,49 @@ function ScanScreen() {
       const { data: items, error } = await supabase
         .from('stored_ids')
         .select('*')
-        .eq('random_id', data)
-        .single();
+        .eq('random_id', data);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw new Error(error.message);
+      }
 
-      if (items) {
-        setItemDetails(items);
-        setResult({
-          message: 'Item found',
-          isError: false,
-        });
-
-        // Store the scan in scan_history using name from stored_ids
-        const { error: historyError } = await supabase
-          .from('scan_history')
-          .insert({
-            item_id: items.random_id,
-            item_name: items.name,
-          });
-
-        if (historyError) {
-          console.error('Error saving to scan history:', historyError);
-          // Don't show error to user as this is a background operation
-        }
-      } else {
+      if (!items || items.length === 0) {
         setItemDetails(null);
         setResult({
-          message: 'Item not found',
+          message: 'No items found with this ID',
           isError: true,
         });
+        return;
+      }
+
+      // If multiple items found, use the first one
+      const selectedItem = items[0];
+      setItemDetails(selectedItem);
+      setResult({
+        message: items.length > 1 
+          ? 'Multiple items found, showing first match' 
+          : 'Item found successfully',
+        isError: false,
+      });
+
+      // Store the scan in scan_history using name from stored_ids
+      const { error: historyError } = await supabase
+        .from('scan_history')
+        .insert({
+          item_id: selectedItem.random_id,
+          item_name: selectedItem.name,
+        });
+
+      if (historyError) {
+        console.error('Error saving to scan history:', historyError);
+        // Don't show error to user as this is a background operation
       }
     } catch (err) {
       console.error('Error fetching item:', err);
       setItemDetails(null);
       setResult({
-        message: 'Failed to fetch item details',
+        message: err instanceof Error ? err.message : 'Failed to fetch item details',
         isError: true,
       });
     }
@@ -90,8 +102,8 @@ function ScanScreen() {
 
   if (!permission.granted) {
     return (
-      <View style={styles.container}>
-        <Text>No access to camera</Text>
+      <View style={[styles.container, styles.permissionContainer]}>
+        <Text style={styles.permissionText}>No access to camera</Text>
         <TouchableOpacity style={styles.button} onPress={requestPermission}>
           <Text style={styles.buttonText}>Grant Permission</Text>
         </TouchableOpacity>
@@ -113,9 +125,11 @@ function ScanScreen() {
       ) : (
         <View style={styles.cameraContainer}>
           <CameraView
+            ref={cameraRef}
             style={StyleSheet.absoluteFillObject}
             facing="back"
-            onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+            onBarcodeScanned={scanned || !cameraReady ? undefined : handleBarCodeScanned}
+            onCameraReady={() => setCameraReady(true)}
             barcodeScannerSettings={{
               barcodeTypes: ['qr'],
             }}
@@ -142,6 +156,7 @@ function ScanScreen() {
               setItemDetails(null);
               setResult(null);
               setScannedText('');
+              setCameraReady(false);
             }}
           >
             <Text style={styles.buttonText}>Tap to Scan Again</Text>
@@ -176,9 +191,11 @@ function ScanScreen() {
                       [
                         'id',
                         'random_id',
+                        'original_id',
                         'name',
                         'description',
                         'created_at',
+                        'age',
                       ].includes(key)
                     )
                       return null;
@@ -204,6 +221,8 @@ function ScanScreen() {
                     Created: {new Date(itemDetails.created_at).toLocaleString()}
                   </Text>
                 </View>
+
+                <AgeVerifier itemAge={itemDetails.age} />
               </View>
             </ScrollView>
           )}
@@ -216,7 +235,7 @@ function ScanScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1b1e',
+    backgroundColor: '#000000',
   },
   cameraContainer: {
     flex: 1,
@@ -249,6 +268,8 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     marginBottom: 10,
+    width: '50%',
+    alignSelf: 'center',
   },
   buttonText: {
     color: 'white',
@@ -331,7 +352,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   scanBox: {
     width: 250,
@@ -388,6 +409,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
+  },
+  permissionContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  permissionText: {
+    color: '#fff',
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: 'center',
   },
 });
 

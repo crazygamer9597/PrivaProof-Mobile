@@ -1,21 +1,24 @@
 import { Tabs } from 'expo-router';
 import { QrCode, Search, Settings } from 'lucide-react-native';
+import { useTheme } from '../../lib/ThemeContext';
 
 export default function TabLayout() {
+  const { colors } = useTheme();
+
   return (
     <Tabs
       initialRouteName="index"
       screenOptions={{
         tabBarStyle: {
-          backgroundColor: '#1a1b1e',
-          borderTopColor: '#2c2d31',
+          backgroundColor: colors.primary,
+          borderTopColor: colors.secondary,
         },
-        tabBarActiveTintColor: '#6366f1',
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarActiveTintColor: colors.text,
+        tabBarInactiveTintColor: colors.text,
         headerStyle: {
-          backgroundColor: '#1a1b1e',
+          backgroundColor: colors.primary,
         },
-        headerTintColor: '#fff',
+        headerTintColor: colors.text,
       }}
     >
       <Tabs.Screen
