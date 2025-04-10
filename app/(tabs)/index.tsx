@@ -220,7 +220,7 @@ function ScanScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1b1e',
+    backgroundColor: '#000000',
   },
   cameraContainer: {
     flex: 1,
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   scanBox: {
     width: 250,
