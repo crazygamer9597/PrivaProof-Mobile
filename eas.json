@@ -6,15 +6,13 @@
     "build": {
         "development": {
             "developmentClient": true,
-            "distribution": "internal",
-            "envFile": "./eas.env.json"
+            "distribution": "internal"
         },
         "preview": {
             "distribution": "internal",
             "android": {
                 "buildType": "apk"
-            },
-            "envFile": "./eas.env.json"
+            }
         },
         "preview2": {
             "android": {
@@ -28,8 +26,7 @@
         "production": {
             "android": {
                 "buildType": "app-bundle"
-            },
-            "envFile": "./eas.env.json"
+            }
         }
     }
 }
